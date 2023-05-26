@@ -1,0 +1,77 @@
+#include <SPI.h>
+
+const byte csPin           = 2;       // MCP4132 chip select pin
+const int  maxPositions    = 128;     // wiper can move from 0 to 255 = 256 positions
+const long rAB             = 100000;  // 100k pot resistance between terminals A and B
+const byte rWiper          = 75;     // 125 ohms pot wiper resistance
+const byte pot             = 0x11;    // pot addr
+
+void setup() {
+
+  Serial.begin(9600);
+
+  digitalWrite(csPin, HIGH);        // chip select default to de-selected
+  pinMode(csPin, OUTPUT);           // configure chip select as output
+  SPI.begin();
+
+  Serial.println("MCP4132 Demo");
+  Serial.println("First pot wiper moves from min to max in approx. 25% increments.");
+
+  Serial.println();
+
+}
+
+void loop() {
+
+  // move pot1 wiper manually to specific positions
+  Serial.println("Pot Control ");
+
+  setPotWiper(pot, 0);                    // minimum resistance
+  delay(3000);
+
+  setPotWiper(pot, 32);                   // 25% resistance
+  delay(3000);
+
+  setPotWiper(pot, 64);                  // 50% resistance
+  delay(3000);
+
+  setPotWiper(pot, 96);                  // 75% resistance
+  delay(3000);
+
+  setPotWiper(pot, 128);                  // 100% resistance
+  delay(3000);
+
+
+  // move pot wiper from min to max in increments of 1 position
+  Serial.println("Pot 0 Control ");
+  for (int i = 0; i < 128; i++) {
+    setPotWiper(pot, i);
+    delay(1000);
+  }
+
+  // move pot0 wiper from max to min in decrements of 1 position
+  for (int i = 128; i > 0; i--) {
+    setPotWiper(pot, i);
+    delay(1000);
+  }
+
+}
+
+void setPotWiper(int addr, int pos) {
+
+  pos = constrain(pos, 0, 125);            // limit wiper setting to range of 0 to 125
+
+  digitalWrite(csPin, LOW);                // select chip
+  SPI.transfer(addr);                      // configure target pot with wiper position
+  SPI.transfer(pos);
+  digitalWrite(csPin, HIGH);               // de-select chip
+
+  // print pot resistance between wiper and B terminal
+  long resistanceWB = ((rAB * pos) / maxPositions ) + rWiper;
+  Serial.print("Wiper position: ");
+  Serial.print(pos);
+  Serial.print(" Resistance wiper to B terminal: ");
+  Serial.print(resistanceWB);
+  Serial.println(" ohms");
+
+}
